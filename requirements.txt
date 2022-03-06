@@ -1,0 +1,8 @@
+fastapi
+cryptography
+SQLAlchemy
+uvicorn[standard]
+psycopg2
+mysqlclient
+cx_Oracle
+pymssql
