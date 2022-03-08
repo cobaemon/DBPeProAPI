@@ -2,7 +2,6 @@ fastapi
 cryptography
 SQLAlchemy
 uvicorn[standard]
-gunicorn
 psycopg2
 mysqlclient
 cx_Oracle
