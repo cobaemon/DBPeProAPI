@@ -133,19 +133,59 @@ def _table_list(_json):
 
 
 def _authority_list(_json):
-    _authority = [
-        'ALL PRIVILEGES',
-        'CREATE',
-        'DELETE',
-        'EXECUTE',
-        'INSERT',
-        'REFERENCES',
-        'SELECT',
-        'TRIGGER',
-        'UPDATE',
-        'USAGE',
-    ]
-    return 1, ','.join(_authority)
+    _authority = {
+        'PostgreSQL': [
+            'ALL PRIVILEGES',
+            'CREATE',
+            'DELETE',
+            'EXECUTE',
+            'INSERT',
+            'REFERENCES',
+            'SELECT',
+            'TEMPORARY',
+            'TRIGGER',
+            'TRUNCATE',
+            'UPDATE',
+            'USAGE'
+        ],
+        'MySQL': [
+            'ALL PRIVILEGES',
+            'ALTER',
+            'ALTER ROUTINE',
+            'CREATE',
+            'CREATE ROLE',
+            'CREATE ROUTINE',
+            'CREATE TABLESPACE',
+            'CREATE TEMPORARY TABLES',
+            'CREATE USER',
+            'CREATE VIEW',
+            'DELETE',
+            'DROP',
+            'DROP ROLE',
+            'EVENT',
+            'EXECUTE',
+            'FILE',
+            'GRANT OPTION',
+            'INDEX',
+            'INSERT',
+            'LOCK TABLES',
+            'PROCESS',
+            'PROXY',
+            'REFERENCES',
+            'RELOAD',
+            'REPLICATION CLIENT',
+            'REPLICATION SLAVE',
+            'SELECT',
+            'SHOW DATABASES',
+            'SHOW VIEW',
+            'SHUTDOWN',
+            'SUPER',
+            'TRIGGER',
+            'UPDATE',
+            'USAGE'
+        ]
+    }
+    return 1, ','.join(_authority[_json['db_type']])
 
 
 class Postgresql:
