@@ -59,4 +59,4 @@ async def remove_authority(_json=Body(...)):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run('main:app', host="127.0.0.1", port=8000)
