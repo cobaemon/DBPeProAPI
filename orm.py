@@ -65,21 +65,6 @@ def _check_authority(_json):
         return 2, 'User information cannot be retrieved.'
 
 
-def _database_list(_json):
-    try:
-        _engine = _setup_engine(_json)
-        db = _select_db(_json)
-
-        with _engine.connect() as conn:
-            row = conn.execute(
-                db._get_database_list()
-            )
-
-        return 1, ','.join([r[0] for r in row])
-    except:
-        return 2, 'Failed to retrieve database list.'
-
-
 def _target_user_list(_json):
     try:
         _engine = _setup_engine(_json)
@@ -191,16 +176,10 @@ def _authority_list(_json):
 class Postgresql:
     def __init__(self, _json):
         self._json = _json
-        self._engine = _setup_engine(_json)
 
     def _get_check_authority(self):
         return text(
             "select rolname, rolsuper from pg_roles"
-        )
-
-    def _get_database_list(self):
-        return text(
-            "select datname from pg_database where datname not like 'pg_%'"
         )
 
     def _get_target_user_list(self):
@@ -233,16 +212,10 @@ class Postgresql:
 class Mysql:
     def __init__(self, _json):
         self._json = _json
-        self._engine = _setup_engine(_json)
 
     def _get_check_authority(self):
         return text(
             "select user, Super_priv from mysql.user"
-        )
-
-    def _get_database_list(self):
-        return text(
-            'show databases'
         )
 
     def _get_target_user_list(self):
@@ -267,10 +240,6 @@ class Mysql:
 class Oracle:
     def __init__(self, _json):
         self._json = _json
-        self._engine = _setup_engine(_json)
-
-    def _get_database_list(self):
-        pass
 
     def _get_target_user_list(self):
         pass
@@ -290,10 +259,6 @@ class Oracle:
 class Mssql:
     def __init__(self, _json):
         self._json = _json
-        self._engine = _setup_engine(_json)
-
-    def _get_database_list(self):
-        pass
 
     def _get_target_user_list(self):
         pass

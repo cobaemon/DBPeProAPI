@@ -13,12 +13,6 @@ async def connection_check(_json=Body(...)):
     return {'code': code, 'result': result}
 
 
-@app.post('/database_list')
-async def database_list(_json=Body(...)):
-    code, result = _database_list(_json)
-    return {'code': code, 'result': result}
-
-
 @app.post('/target_user_list')
 async def target_user_list(_json=Body(...)):
     code, result = _target_user_list(_json)
