@@ -123,51 +123,35 @@ def _table_list(_json):
 def _authority_list(_json):
     _authority = {
         'PostgreSQL': [
-            'ALL PRIVILEGES',
-            'CREATE',
-            'DELETE',
-            'EXECUTE',
-            'INSERT',
-            'REFERENCES',
-            'SELECT',
-            'TEMPORARY',
-            'TRIGGER',
-            'TRUNCATE',
-            'UPDATE',
-            'USAGE'
+            [
+                'ALL PRIVILEGES',
+                'DELETE',
+                'INSERT',
+                'REFERENCES',
+                'SELECT',
+                'TRIGGER',
+                'TRUNCATE',
+                'UPDATE'
+            ],
+            [
+                'ALL PRIVILEGES',
+                'CREATE',
+                'USAGE'
+            ]
         ],
         'MySQL': [
             'ALL PRIVILEGES',
             'ALTER',
-            'ALTER ROUTINE',
             'CREATE',
-            'CREATE ROLE',
-            'CREATE ROUTINE',
-            'CREATE TABLESPACE',
-            'CREATE TEMPORARY TABLES',
-            'CREATE USER',
             'CREATE VIEW',
             'DELETE',
             'DROP',
-            'DROP ROLE',
-            'EVENT',
-            'EXECUTE',
-            'FILE',
             'GRANT OPTION',
             'INDEX',
             'INSERT',
-            'LOCK TABLES',
-            'PROCESS',
-            'PROXY',
             'REFERENCES',
-            'RELOAD',
-            'REPLICATION CLIENT',
-            'REPLICATION SLAVE',
             'SELECT',
-            'SHOW DATABASES',
             'SHOW VIEW',
-            'SHUTDOWN',
-            'SUPER',
             'TRIGGER',
             'UPDATE',
             'USAGE'
@@ -184,22 +168,44 @@ def _authority_list(_json):
             'UPDATE'
         ],
         'Microsoft SQL Server': [
-            'ALTER',
-            'CONTROL',
-            'CREATE SEQUENCE',
-            'DELETE',
-            'EXECUTE',
-            'INSERT',
-            'RECEIVE',
-            'REFERENCES',
-            'SELECT',
-            'TAKE OWNERSHIP',
-            'UPDATE',
-            'VIEW CHANGE TRACKING',
-            'VIEW DEFINITION',
+            [
+                'ALTER',
+                'CONTROL',
+                'DELETE',
+                'EXECUTE',
+                'INSERT',
+                'RECEIVE',
+                'REFERENCES',
+                'SELECT',
+                'TAKE OWNERSHIP',
+                'UPDATE',
+                'VIEW CHANGE TRACKING',
+                'VIEW DEFINITION'
+            ],
+            [
+                'ALTER',
+                'CONTROL',
+                'CREATE SEQUENCE',
+                'DELETE',
+                'EXECUTE',
+                'INSERT',
+                'REFERENCES',
+                'SELECT',
+                'TAKE OWNERSHIP',
+                'UPDATE',
+                'VIEW CHANGE TRACKING',
+                'VIEW DEFINITION'
+            ]
         ]
     }
-    return 1, ','.join(_authority[_json['db_type']])
+
+    if _json['db_type'] in ('PostgreSQL', 'Microsoft SQL Server'):
+        if '.' in _json["table"]:
+            return 1, ','.join(_authority[_json['db_type']][0])
+        else:
+            return 1, ','.join(_authority[_json['db_type']][1])
+    else:
+        return 1, ','.join(_authority[_json['db_type']])
 
 
 class Postgresql:
