@@ -50,17 +50,20 @@ def _check_authority(_json):
                 db._get_check_authority()
             )
 
-        user = {}
-        for r in row:
-            user[r[0]] = str(r[1])
+        if _json['db_type'] != 'Oracle':
+            user = {}
+            for r in row:
+                user[r[0]] = str(r[1])
 
-        if _json['user'] in user:
             if user[_json['user']] == 'True' or user[_json['user']] == 'Y':
                 return 1, 'OK'
             else:
                 return 2, 'User is not superuser'
         else:
-            return 2, 'User not found'
+            for r in row:
+                if r[0] == 'GRANT ANY OBJECT PRIVILEGE':
+                    return 1, 'OK'
+            return 2, 'User is not authorized'
     except:
         return 2, 'User information cannot be retrieved.'
 
@@ -168,6 +171,17 @@ def _authority_list(_json):
             'TRIGGER',
             'UPDATE',
             'USAGE'
+        ],
+        'Oracle': [
+            'ALL',
+            'ALTER',
+            'DEBUG',
+            'DELETE',
+            'INDEX',
+            'INSERT',
+            'REFERENCES',
+            'SELECT',
+            'UPDATE'
         ]
     }
     return 1, ','.join(_authority[_json['db_type']])
@@ -241,11 +255,14 @@ class Oracle:
     def __init__(self, _json):
         self._json = _json
 
+    def _get_check_authority(self):
+        return text('SELECT PRIVILEGE FROM USER_SYS_PRIVS')
+
     def _get_target_user_list(self):
-        pass
+        return text('SELECT USERNAME FROM ALL_USERS')
 
     def _get_table_list(self):
-        pass
+        return text('SELECT TABLE_NAME FROM DBA_TABLES')
 
     def add(self):
         return text(
