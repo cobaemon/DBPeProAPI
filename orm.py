@@ -89,7 +89,7 @@ def _table_list(_json):
         db = _select_db(_json)
 
         schema = []
-        if _json['db_type'] == 'PostgreSQL':
+        if _json['db_type'] in ('PostgreSQL', 'Microsoft SQL Server'):
             with _engine.connect() as conn:
                 row = conn.execute(
                     db._get_schema_list()
@@ -182,6 +182,21 @@ def _authority_list(_json):
             'REFERENCES',
             'SELECT',
             'UPDATE'
+        ],
+        'Microsoft SQL Server': [
+            'ALTER',
+            'CONTROL',
+            'CREATE SEQUENCE',
+            'DELETE',
+            'EXECUTE',
+            'INSERT',
+            'RECEIVE',
+            'REFERENCES',
+            'SELECT',
+            'TAKE OWNERSHIP',
+            'UPDATE',
+            'VIEW CHANGE TRACKING',
+            'VIEW DEFINITION',
         ]
     }
     return 1, ','.join(_authority[_json['db_type']])
@@ -278,18 +293,29 @@ class Mssql:
         self._json = _json
 
     def _get_target_user_list(self):
-        pass
+        return text('SELECT name FROM sys.database_principals')
+
+    def _get_schema_list(self):
+        return text('SELECT name FROM sys.schemas')
 
     def _get_table_list(self):
-        pass
+        return text('SELECT name FROM sys.all_objects')
 
     def add(self, authority):
-        return text(
-            f'GRANT {authority} ON OBJECT\:\:{self._json["database"]}.{self._json["table"]} TO {self._json["target_user"]}')
+        if '.' in self._json["table"]:
+            return text(
+                f'GRANT {authority} ON OBJECT \:\: {self._json["table"]} TO {self._json["target_user"]}')
+        else:
+            return text(
+                f'GRANT {authority} ON SCHEMA \:\: {self._json["table"]} TO {self._json["target_user"]}')
 
     def remove(self, authority):
-        return text(
-            f'REVOKE {authority} ON OBJECT \:\: {self._json["database"]}.{self._json["table"]} TO {self._json["target_user"]}')
+        if '.' in self._json["table"]:
+            return text(
+                f'REVOKE {authority} ON OBJECT \:\: {self._json["table"]} FROM {self._json["target_user"]}')
+        else:
+            return text(
+                f'REVOKE {authority} ON SCHEMA \:\: {self._json["table"]} FROM {self._json["target_user"]}')
 
 
 def _add_authority(_json):
