@@ -50,34 +50,22 @@ def _check_authority(_json):
                 db._get_check_authority()
             )
 
-        user = {}
-        for r in row:
-            user[r[0]] = str(r[1])
+        if _json['db_type'] != 'Oracle':
+            user = {}
+            for r in row:
+                user[r[0]] = str(r[1])
 
-        if _json['user'] in user:
             if user[_json['user']] == 'True' or user[_json['user']] == 'Y':
                 return 1, 'OK'
             else:
                 return 2, 'User is not superuser'
         else:
-            return 2, 'User not found'
+            for r in row:
+                if r[0] == 'GRANT ANY OBJECT PRIVILEGE':
+                    return 1, 'OK'
+            return 2, 'User is not authorized'
     except:
         return 2, 'User information cannot be retrieved.'
-
-
-def _database_list(_json):
-    try:
-        _engine = _setup_engine(_json)
-        db = _select_db(_json)
-
-        with _engine.connect() as conn:
-            row = conn.execute(
-                db._get_database_list()
-            )
-
-        return 1, ','.join([r[0] for r in row])
-    except:
-        return 2, 'Failed to retrieve database list.'
 
 
 def _target_user_list(_json):
@@ -101,7 +89,7 @@ def _table_list(_json):
         db = _select_db(_json)
 
         schema = []
-        if _json['db_type'] == 'PostgreSQL':
+        if _json['db_type'] in ('PostgreSQL', 'Microsoft SQL Server'):
             with _engine.connect() as conn:
                 row = conn.execute(
                     db._get_schema_list()
@@ -135,72 +123,98 @@ def _table_list(_json):
 def _authority_list(_json):
     _authority = {
         'PostgreSQL': [
-            'ALL PRIVILEGES',
-            'CREATE',
-            'DELETE',
-            'EXECUTE',
-            'INSERT',
-            'REFERENCES',
-            'SELECT',
-            'TEMPORARY',
-            'TRIGGER',
-            'TRUNCATE',
-            'UPDATE',
-            'USAGE'
+            [
+                'ALL PRIVILEGES',
+                'DELETE',
+                'INSERT',
+                'REFERENCES',
+                'SELECT',
+                'TRIGGER',
+                'TRUNCATE',
+                'UPDATE'
+            ],
+            [
+                'ALL PRIVILEGES',
+                'CREATE',
+                'USAGE'
+            ]
         ],
         'MySQL': [
             'ALL PRIVILEGES',
             'ALTER',
-            'ALTER ROUTINE',
             'CREATE',
-            'CREATE ROLE',
-            'CREATE ROUTINE',
-            'CREATE TABLESPACE',
-            'CREATE TEMPORARY TABLES',
-            'CREATE USER',
             'CREATE VIEW',
             'DELETE',
             'DROP',
-            'DROP ROLE',
-            'EVENT',
-            'EXECUTE',
-            'FILE',
             'GRANT OPTION',
             'INDEX',
             'INSERT',
-            'LOCK TABLES',
-            'PROCESS',
-            'PROXY',
             'REFERENCES',
-            'RELOAD',
-            'REPLICATION CLIENT',
-            'REPLICATION SLAVE',
             'SELECT',
-            'SHOW DATABASES',
             'SHOW VIEW',
-            'SHUTDOWN',
-            'SUPER',
             'TRIGGER',
             'UPDATE',
             'USAGE'
+        ],
+        'Oracle': [
+            'ALL',
+            'ALTER',
+            'DEBUG',
+            'DELETE',
+            'INDEX',
+            'INSERT',
+            'REFERENCES',
+            'SELECT',
+            'UPDATE'
+        ],
+        'Microsoft SQL Server': [
+            [
+                'ALTER',
+                'CONTROL',
+                'DELETE',
+                'EXECUTE',
+                'INSERT',
+                'RECEIVE',
+                'REFERENCES',
+                'SELECT',
+                'TAKE OWNERSHIP',
+                'UPDATE',
+                'VIEW CHANGE TRACKING',
+                'VIEW DEFINITION'
+            ],
+            [
+                'ALTER',
+                'CONTROL',
+                'CREATE SEQUENCE',
+                'DELETE',
+                'EXECUTE',
+                'INSERT',
+                'REFERENCES',
+                'SELECT',
+                'TAKE OWNERSHIP',
+                'UPDATE',
+                'VIEW CHANGE TRACKING',
+                'VIEW DEFINITION'
+            ]
         ]
     }
-    return 1, ','.join(_authority[_json['db_type']])
+
+    if _json['db_type'] in ('PostgreSQL', 'Microsoft SQL Server'):
+        if '.' in _json["table"]:
+            return 1, ','.join(_authority[_json['db_type']][0])
+        else:
+            return 1, ','.join(_authority[_json['db_type']][1])
+    else:
+        return 1, ','.join(_authority[_json['db_type']])
 
 
 class Postgresql:
     def __init__(self, _json):
         self._json = _json
-        self._engine = _setup_engine(_json)
 
     def _get_check_authority(self):
         return text(
             "select rolname, rolsuper from pg_roles"
-        )
-
-    def _get_database_list(self):
-        return text(
-            "select datname from pg_database where datname not like 'pg_%'"
         )
 
     def _get_target_user_list(self):
@@ -233,16 +247,10 @@ class Postgresql:
 class Mysql:
     def __init__(self, _json):
         self._json = _json
-        self._engine = _setup_engine(_json)
 
     def _get_check_authority(self):
         return text(
             "select user, Super_priv from mysql.user"
-        )
-
-    def _get_database_list(self):
-        return text(
-            'show databases'
         )
 
     def _get_target_user_list(self):
@@ -267,16 +275,15 @@ class Mysql:
 class Oracle:
     def __init__(self, _json):
         self._json = _json
-        self._engine = _setup_engine(_json)
 
-    def _get_database_list(self):
-        pass
+    def _get_check_authority(self):
+        return text('SELECT PRIVILEGE FROM USER_SYS_PRIVS')
 
     def _get_target_user_list(self):
-        pass
+        return text('SELECT USERNAME FROM ALL_USERS')
 
     def _get_table_list(self):
-        pass
+        return text('SELECT TABLE_NAME FROM DBA_TABLES')
 
     def add(self):
         return text(
@@ -290,24 +297,31 @@ class Oracle:
 class Mssql:
     def __init__(self, _json):
         self._json = _json
-        self._engine = _setup_engine(_json)
-
-    def _get_database_list(self):
-        pass
 
     def _get_target_user_list(self):
-        pass
+        return text('SELECT name FROM sys.database_principals')
+
+    def _get_schema_list(self):
+        return text('SELECT name FROM sys.schemas')
 
     def _get_table_list(self):
-        pass
+        return text('SELECT name FROM sys.all_objects')
 
     def add(self, authority):
-        return text(
-            f'GRANT {authority} ON OBJECT\:\:{self._json["database"]}.{self._json["table"]} TO {self._json["target_user"]}')
+        if '.' in self._json["table"]:
+            return text(
+                f'GRANT {authority} ON OBJECT \:\: {self._json["table"]} TO {self._json["target_user"]}')
+        else:
+            return text(
+                f'GRANT {authority} ON SCHEMA \:\: {self._json["table"]} TO {self._json["target_user"]}')
 
     def remove(self, authority):
-        return text(
-            f'REVOKE {authority} ON OBJECT \:\: {self._json["database"]}.{self._json["table"]} TO {self._json["target_user"]}')
+        if '.' in self._json["table"]:
+            return text(
+                f'REVOKE {authority} ON OBJECT \:\: {self._json["table"]} FROM {self._json["target_user"]}')
+        else:
+            return text(
+                f'REVOKE {authority} ON SCHEMA \:\: {self._json["table"]} FROM {self._json["target_user"]}')
 
 
 def _add_authority(_json):

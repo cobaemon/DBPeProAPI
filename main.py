@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, Body
 
-from orm import _connection_check, _database_list, _table_list, _target_user_list, _check_authority, \
+from orm import _connection_check, _table_list, _target_user_list, _check_authority, \
     _authority_list, _add_authority, _remove_authority
 
 app = FastAPI()
@@ -10,12 +10,6 @@ app = FastAPI()
 @app.post('/connection_check')
 async def connection_check(_json=Body(...)):
     code, result = _connection_check(_json)
-    return {'code': code, 'result': result}
-
-
-@app.post('/database_list')
-async def database_list(_json=Body(...)):
-    code, result = _database_list(_json)
     return {'code': code, 'result': result}
 
 
